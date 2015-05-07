@@ -99,6 +99,23 @@ SocialSharing.prototype._getErrorCallback = function (ecb, functionName) {
   }
 };
 
+
+SocialSharing.prototype.shareViaFacebookMessenger = function (message, fileOrFileArray, url, pasteMessageHint, successCallback, errorCallback) {
+  pasteMessageHint = pasteMessageHint || "If you like you can paste a message from your clipboard";
+  console.log("Called face book messenger....");
+  cordova.exec(successCallback, this._getErrorCallback(errorCallback, "shareViaFacebookMessenger"), "SocialSharing", "shareViaFacebookMessenger", [message, null, this._asArray(fileOrFileArray), url, pasteMessageHint]);
+};
+               
+SocialSharing.prototype.shareViaFacebookMessengerNative = function (message, fileOrFileArray, url, pasteMessageHint, successCallback, errorCallback) {
+  pasteMessageHint = pasteMessageHint || "If you like you can paste a message from your clipboard";
+  cordova.exec(successCallback, this._getErrorCallback(errorCallback, "shareViaFacebookMessengerNative"), "SocialSharing", "shareViaFacebookMessenger", [message, null, this._asArray(fileOrFileArray), url, pasteMessageHint]);
+};
+
+
+
+
+
+
 SocialSharing.install = function () {
   if (!window.plugins) {
     window.plugins = {};

@@ -45,6 +45,24 @@
 &nbsp;&nbsp;&nbsp; -->
 <a href"#" onclick="window.plugins.socialsharing.shareViaWhatsApp('Message via WhatsApp', null /* img */, null /* url */, function() {console.log('share ok')}, function(errormsg){alert(errormsg)})"><img src="img/whatsapp.jpeg" width="30px" height="30px"></a>
 <br><br>
+<!--
+<button onclick="window.plugins.touchid.isAvailable(function(msg) {alert('ok: ' + msg)}, function(msg) {alert('not ok: ' + msg)})">Touch ID available?</button>
+
+<br><br>
+<button onclick="window.plugins.touchid.verifyFingerprint('Scan your fingerprint please', function(msg) {alert('ok: ' + msg)}, function(msg) {alert('not ok: ' + JSON.stringify(msg))})">Scan fingerprint</button>
+<br><br>
+
+<button onclick="window.plugins.socialsharing.shareVia('com.facebook.orca', 'Message via FB', null, null, null, function(){console.log('share ok')}, function(msg) {alert('error: ' + msg)})">message via Facebook</button><br><br>
+<!-- start facebook on Android (same as `shareViaFacebook`), if Facebook is not installed, the errorcallback will be invoked with message 'not available' -- >
+<button onclick="window.plugins.socialsharing.shareVia('facebook', 'Message via FB', null, null, null, function(){console.log('share ok')}, function(msg) {alert('error: ' + msg)})">message via Facebook</button><br><br>
+<!-- start twitter on iOS (same as `shareViaTwitter`), if Twitter is not installed, the errorcallback will be invoked with message 'not available' -- >
+<button onclick="window.plugins.socialsharing.shareVia('com.apple.social.twitter', 'Message via Twitter', null, null, 'http://www.x-services.nl', function(){console.log('share ok')}, function(msg) {alert('error: ' + msg)})">message and link via Twitter on iOS</button><br><br>
+<!-- if you share to a non existing/supported app, the errorcallback will be invoked with message 'not available' -- >
+<button onclick="window.plugins.socialsharing.shareViaFacebookMessenger('Testing posting a message from Moven app. Check out the Moven app', 'https://www.moven.com/images/moven-web-logo.png', 'https://itunes.apple.com/us/app/moven/id661035659', 'Contents are copied, paste it', function() {console.log('share ok')}, function(errormsg){alert(errormsg)})">message via shareViaFacebookMessenger</button>
+<br><br>
+-->
+<button onclick="window.plugins.socialsharing.shareViaFacebookMessengerNative('Testing posting a message from Moven app. Check out the Moven app', 'https://www.moven.com/images/moven-web-logo.png', 'https://itunes.apple.com/us/app/moven/id661035659', 'Contents are copied, paste it', function() {console.log('share ok')}, function(errormsg){alert(errormsg)})">message via shareViaFacebookMessenger</button>
+<br><br>
         </div>
       </div>
     </div><!--

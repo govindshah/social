@@ -30,6 +30,11 @@
 
 #import <Cordova/CDVPlugin.h>
 
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
+#import <FBSDKLoginKit/FBSDKLoginKit.h>
+
+#import <FBSDKMessengerShareKit/FBSDKMessengerShareKit.h>
+
 @implementation AppDelegate
 
 @synthesize window, viewController;
@@ -98,6 +103,12 @@
     if (!url) {
         return NO;
     }
+  
+    // Check if the handler knows what to do with this url
+//  if ([self.viewController canOpenURL:url sourceApplication:sourceApplication]) {
+//      // Handle the url
+//    [_messengerUrlHandler openURL:url sourceApplication:sourceApplication];
+//  }
 
     [self.viewController processOpenUrl:url];
 
@@ -106,6 +117,8 @@
 
     return YES;
 }
+
+
 
 // repost all remote and local notification using the default NSNotificationCenter so multiple plugins may respond
 - (void)            application:(UIApplication*)application

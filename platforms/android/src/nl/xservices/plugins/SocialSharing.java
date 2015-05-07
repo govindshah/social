@@ -31,6 +31,10 @@ import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.facebook.messenger.MessengerUtils;
+import com.facebook.messenger.MessengerThreadParams;
+import com.facebook.messenger.ShareToMessengerParams;
+
 public class SocialSharing extends CordovaPlugin {
 
   private static final String ACTION_AVAILABLE_EVENT = "available";
@@ -44,6 +48,9 @@ public class SocialSharing extends CordovaPlugin {
   private static final String ACTION_SHARE_VIA_WHATSAPP_EVENT = "shareViaWhatsApp";
   private static final String ACTION_SHARE_VIA_SMS_EVENT = "shareViaSMS";
   private static final String ACTION_SHARE_VIA_EMAIL_EVENT = "shareViaEmail";
+  
+  private static final String ACTION_SHARE_VIA_FACEBOOK_MESSENGER = "shareViaFacebookMessenger";
+  private static final String ACTION_SHARE_VIA_FACEBOOK_MESSENGER_NATIVE = "shareViaFacebookMessengerNative";
 
   private static final int ACTIVITY_CODE_SENDVIAEMAIL = 2;
 
@@ -92,6 +99,11 @@ public class SocialSharing extends CordovaPlugin {
       return invokeSMSIntent(callbackContext, args.getJSONObject(0), args.getString(1));
     } else if (ACTION_SHARE_VIA_EMAIL_EVENT.equals(action)) {
       return invokeEmailIntent(callbackContext, args.getString(0), args.getString(1), args.getJSONArray(2), args.isNull(3) ? null : args.getJSONArray(3), args.isNull(4) ? null : args.getJSONArray(4), args.isNull(5) ? null : args.getJSONArray(5));
+    } else if (ACTION_SHARE_VIA_FACEBOOK_MESSENGER.equals(action)) {
+    	this.pasteMessage = args.getString(4);
+    	return doSendIntent(callbackContext, args.getString(0), args.getString(1), args.getJSONArray(2), args.getString(3), "com.facebook.orca", false);
+    //} else if (ACTION_SHARE_VIA_FACEBOOK_MESSENGER_NATIVE.equals(action)) {
+    	
     } else {
       callbackContext.error("socialSharing." + action + " is not a supported function. Did you mean '" + ACTION_SHARE_EVENT + "'?");
       return false;
@@ -487,4 +499,120 @@ public class SocialSharing extends CordovaPlugin {
   public static String sanitizeFilename(String name) {
     return name.replaceAll("[:\\\\/*?|<> ]", "_");
   }
+  
+  private boolean invokeFacebookMessenger(final CallbackContext callbackContext, final String msg, final String subject, final JSONArray files, final String url, final String appPackageName, final boolean peek) {
+
+	    final CordovaInterface mycordova = cordova;
+	    final CordovaPlugin plugin = this;
+
+	    cordova.getThreadPool().execute(new SocialSharingRunnable(callbackContext) {
+	      public void run() {
+	        String message = msg;
+	        final boolean hasMultipleAttachments = files.length() > 1;
+	       
+	        final Intent sendIntent = new Intent(hasMultipleAttachments ? Intent.ACTION_SEND_MULTIPLE : Intent.ACTION_SEND);
+	        sendIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+
+	        if (files.length() > 0) {
+	          ArrayList<Uri> fileUris = new ArrayList<Uri>();
+	          try {
+	            final String dir = getDownloadDir();
+	            Uri fileUri = null;
+	            for (int i = 0; i < files.length(); i++) {
+	              fileUri = getFileUriAndSetType(sendIntent, dir, files.getString(i), subject, i);
+	              if (fileUri != null) {
+	                fileUris.add(fileUri);
+	              }
+	            }
+	            if (!fileUris.isEmpty()) {
+	              if (hasMultipleAttachments) {
+	                sendIntent.putExtra(Intent.EXTRA_STREAM, fileUris);
+	              } else {
+	                sendIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
+	              }
+	            }
+	          } catch (Exception e) {
+	            callbackContext.error(e.getMessage());
+	          }
+	        } else {
+	          sendIntent.setType("text/plain");
+	        }
+
+	        if (notEmpty(subject)) {
+	          sendIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
+	        }
+	        // add the URL to the message, as there seems to be no separate field
+	        if (notEmpty(url)) {
+	          if (notEmpty(message)) {
+	            message += " " + url;
+	          } else {
+	            message = url;
+	          }
+	        }
+	        if (notEmpty(message)) {
+	          sendIntent.putExtra(android.content.Intent.EXTRA_TEXT, message);
+	        }
+
+	        if (appPackageName != null) {
+	          String packageName = appPackageName;
+	          String passedActivityName = null;
+	          if (packageName.contains("/")) {
+	            String[] items = appPackageName.split("/");
+	            packageName = items[0];
+	            passedActivityName = items[1];
+	          }
+	          final ActivityInfo activity = getActivity(callbackContext, sendIntent, packageName);
+	          if (activity != null) {
+	            if (peek) {
+	              callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK));
+	            } else {
+	              sendIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+	              sendIntent.setComponent(new ComponentName(activity.applicationInfo.packageName,
+	                  passedActivityName != null ? passedActivityName : activity.name));
+	              mycordova.startActivityForResult(plugin, sendIntent, 0);
+
+	              if (pasteMessage != null) {
+	                // add a little delay because target app (facebook only atm) needs to be started first
+	                new Timer().schedule(new TimerTask() {
+	                  public void run() {
+	                    cordova.getActivity().runOnUiThread(new Runnable() {
+	                      public void run() {
+	                        showPasteMessage(msg, pasteMessage);
+	                      }
+	                    });
+	                  }
+	                }, 2000);
+	              }
+	            }
+	          }
+	        } else {
+	          if (peek) {
+	            callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.OK));
+	          } else {
+	            mycordova.startActivityForResult(plugin, Intent.createChooser(sendIntent, null), 1);
+	          }
+	        }
+//	        Intent sendIntent = new Intent();
+//	        sendIntent.setAction(Intent.ACTION_SEND);
+//	        sendIntent
+//	                .putExtra(Intent.EXTRA_TEXT,
+//	                        "<---YOUR TEXT HERE--->.");
+//	        sendIntent.setType("text/plain");
+//	        sendIntent.setPackage("com.facebook.orca");
+//	        sendIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+	        //final ActivityInfo activity = getActivity(callbackContext, sendIntent, "com.facebook.orca");
+	        
+            //sendIntent.setComponent(new ComponentName(activity.applicationInfo.packageName, activity.name));
+            //mycordova.startActivityForResult(plugin, sendIntent, 0);
+	        
+//	    try{
+//	        startActivity(sendIntent);
+//	    }
+//	    catch (android.content.ActivityNotFoundException ex) {
+//	                ToastHelper.MakeShortText("Please Install Facebook Messenger");
+//	            }
+	      } 
+	    });
+	    return true;
+	  }
 }

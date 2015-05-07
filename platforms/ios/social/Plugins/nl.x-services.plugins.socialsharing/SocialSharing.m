@@ -6,6 +6,12 @@
 #import <MessageUI/MFMailComposeViewController.h>
 #import <MobileCoreServices/MobileCoreServices.h>
 
+#import <FBSDKMessengerShareKit/FBSDKMessengerContext.h>
+#import <FBSDKMessengerShareKit/FBSDKMessengerShareKit.h>
+
+#import <FBSDKShareKit/FBSDKShareLinkContent.h>
+#import <FBSDKShareKit/FBSDKMessageDialog.h>
+
 @implementation SocialSharing {
   UIPopoverController *_popover;
   NSString *_popupCoordinates;
@@ -593,6 +599,156 @@
 
 - (void)popoverControllerDidDismissPopover:(UIPopoverController *)popoverController {
   _popover = nil;
+}
+
+- (bool)canShareViaFacebookMessenger {
+  return [[UIApplication sharedApplication] canOpenURL: [NSURL URLWithString:@"fb-messenger://user-thread/USER_ID"]];
+}
+
+- (void)shareViaFacebookMessenger:(CDVInvokedUrlCommand*)command {
+  printf("This is a neat command!\n");
+    //if ([self canShareViaFacebookMessenger]) {
+  if ([FBSDKMessengerSharer messengerPlatformCapabilities] & FBSDKMessengerPlatformCapabilityImage) {
+    NSString *message   = [command.arguments objectAtIndex:0];
+      // subject is not supported by the SLComposeViewController
+    NSArray  *filenames = [command.arguments objectAtIndex:2];
+    NSString *urlString = [command.arguments objectAtIndex:3];
+    
+      // only use the first image (for now.. maybe we can share in a loop?)
+    UIImage* image = nil;
+    for (NSString* filename in filenames) {
+      image = [self getImage:filename];
+      break;
+    }
+    
+//      // with WhatsApp, we can share an image OR text+url.. image wins if set
+//    if (image != nil) {
+//      NSString * savePath = [NSHomeDirectory() stringByAppendingPathComponent:@"Documents/whatsAppTmp.wai"];
+//      [UIImageJPEGRepresentation(image, 1.0) writeToFile:savePath atomically:YES];
+//      _documentInteractionController = [UIDocumentInteractionController interactionControllerWithURL:[NSURL fileURLWithPath:savePath]];
+//      _documentInteractionController.UTI = @"net.whatsapp.image";
+//      [_documentInteractionController presentOpenInMenuFromRect:CGRectMake(0, 0, 0, 0) inView:self.viewController.view animated: YES];
+//    } else {
+//        // append an url to a message, if both are passed
+//      NSString * shareString = @"";
+//      if (message != (id)[NSNull null]) {
+//        shareString = message;
+//      }
+//      if (urlString != (id)[NSNull null]) {
+//        if ([shareString isEqual: @""]) {
+//          shareString = urlString;
+//        } else {
+//          shareString = [NSString stringWithFormat:@"%@ %@", shareString, urlString];
+//        }
+//      }
+//      NSString * encodedShareString = [shareString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+//        // also encode the '=' character
+//      encodedShareString = [encodedShareString stringByReplacingOccurrencesOfString:@"=" withString:@"%3D"];
+//      NSString * encodedShareStringForWhatsApp = [NSString stringWithFormat:@"whatsapp://send?text=%@", encodedShareString];
+//      
+//      NSURL *whatsappURL = [NSURL URLWithString:encodedShareStringForWhatsApp];
+//      [[UIApplication sharedApplication] openURL: whatsappURL];
+//    }
+    
+    
+      //[FBSDKMessengerSharer shareImage:image withOptions:nil];
+    
+    
+    NSString * shareString = @"";
+    if (message != (id)[NSNull null]) {
+      shareString = message;
+    }
+    
+    if (urlString != (id)[NSNull null]) {
+      if ([shareString isEqual: @""]) {
+        shareString = urlString;
+      } else {
+        shareString = [NSString stringWithFormat:@"%@ %@", shareString, urlString];
+      }
+    }
+    NSString * encodedShareString = [shareString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+    // also encode the '=' character
+    encodedShareString = [encodedShareString stringByReplacingOccurrencesOfString:@"=" withString:@"%3D"];
+    NSString * encodedShareStringForFBMessenger = [NSString stringWithFormat:@"fb://messaging/compose?text=%@", encodedShareString];
+    
+    
+    NSURL *fbURL = [NSURL URLWithString:encodedShareStringForFBMessenger];
+    [[UIApplication sharedApplication] openURL: fbURL];
+    printf("This is a neat command!\n");
+    
+    CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    
+  } else {
+    printf("This is a neat EROOR!\n");
+    CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"not available"];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+  }
+}
+
+
+- (void)shareViaFacebookMessengerNative:(CDVInvokedUrlCommand*)command {
+  printf("This is a neat command!\n");
+    //if ([self canShareViaFacebookMessenger]) {
+  if ([FBSDKMessengerSharer messengerPlatformCapabilities] & FBSDKMessengerPlatformCapabilityImage) {
+    NSString *message   = [command.arguments objectAtIndex:0];
+      // subject is not supported by the SLComposeViewController
+    NSArray  *filenames = [command.arguments objectAtIndex:2];
+    NSString *urlString = [command.arguments objectAtIndex:3];
+    
+      // only use the first image (for now.. maybe we can share in a loop?)
+    UIImage* image = nil;
+    for (NSString* filename in filenames) {
+      image = [self getImage:filename];
+      break;
+    }
+    
+    NSString * shareString = @"";
+    if (message != (id)[NSNull null]) {
+      shareString = message;
+    }
+    
+    if (urlString != (id)[NSNull null]) {
+      if ([shareString isEqual: @""]) {
+        shareString = urlString;
+      } else {
+        shareString = [NSString stringWithFormat:@"%@ %@", shareString, urlString];
+      }
+    }
+    NSString * encodedShareString = [shareString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+    
+    
+    UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
+    NSString     *text       = [command.arguments objectAtIndex:4];
+//    
+//    [pasteboard setValue:text forPasteboardType:@"public.text"];
+//pasteboard.persistent = YES;
+      //[pasteboard setString:text];
+
+      NSLog(@"%@", pasteboard.items);
+    
+    
+    printf("This is a the messagess... %s\n", [message cStringUsingEncoding:[NSString defaultCStringEncoding]]);
+    printf("%s\n", [encodedShareString cStringUsingEncoding:[NSString defaultCStringEncoding]]);
+      //printf("%s\n", [text cStringUsingEncoding:[NSString defaultCStringEncoding]]);
+    
+    FBSDKShareLinkContent *content = [[FBSDKShareLinkContent alloc] init];
+    content.contentURL = [NSURL URLWithString:@"https://developers.facebook.com"];
+
+      //[FBSDKMessageDialog showWithContent:encodedShareString delegate:nil];
+    
+    [FBSDKMessengerSharer shareImage:image withOptions:nil];
+    NSLog(@"%@", pasteboard.items);
+    
+    
+    CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    
+  } else {
+    printf("This is a neat EROOR!\n");
+    CDVPluginResult * pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"not available"];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+  }
 }
 
 @end

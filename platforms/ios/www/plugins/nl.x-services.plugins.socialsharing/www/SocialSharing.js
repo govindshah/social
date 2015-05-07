@@ -51,6 +51,16 @@ SocialSharing.prototype.shareViaFacebookWithPasteMessageHint = function (message
 SocialSharing.prototype.shareViaWhatsApp = function (message, fileOrFileArray, url, successCallback, errorCallback) {
   cordova.exec(successCallback, this._getErrorCallback(errorCallback, "shareViaWhatsApp"), "SocialSharing", "shareViaWhatsApp", [message, null, this._asArray(fileOrFileArray), url]);
 };
+               
+SocialSharing.prototype.shareViaFacebookMessenger = function (message, fileOrFileArray, url, pasteMessageHint, successCallback, errorCallback) {
+  pasteMessageHint = pasteMessageHint || "If you like you can paste a message from your clipboard";
+  cordova.exec(successCallback, this._getErrorCallback(errorCallback, "shareViaFacebookMessenger"), "SocialSharing", "shareViaFacebookMessenger", [message, null, this._asArray(fileOrFileArray), url, pasteMessageHint]);
+};
+               
+               SocialSharing.prototype.shareViaFacebookMessengerNative = function (message, fileOrFileArray, url, pasteMessageHint, successCallback, errorCallback) {
+               pasteMessageHint = pasteMessageHint || "If you like you can paste a message from your clipboard";
+               cordova.exec(successCallback, this._getErrorCallback(errorCallback, "shareViaFacebookMessengerNative"), "SocialSharing", "shareViaFacebookMessengerNative", [message, null, this._asArray(fileOrFileArray), url, pasteMessageHint]);
+               };
 
 SocialSharing.prototype.shareViaSMS = function (options, phonenumbers, successCallback, errorCallback) {
   var opts = options;
